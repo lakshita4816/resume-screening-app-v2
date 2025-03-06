@@ -1,22 +1,31 @@
 import streamlit as st
 import spacy
+import os
+import nltk
 from pdfminer.high_level import extract_text
 import docx
 import re
-import nltk
 from nltk.corpus import stopwords
 from textblob import TextBlob
 
-# Download necessary NLP data
-nltk.download('stopwords')
+# Ensure necessary nltk data is downloaded
+nltk_resources = ["stopwords", "punkt"]
+for resource in nltk_resources:
+    try:
+        nltk.data.find(f"corpora/{resource}")
+    except LookupError:
+        nltk.download(resource)
 
-# Load NLP model
-nlp = spacy.load("en_core_web_sm")
+# Ensure spaCy model is installed
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    os.system("python -m spacy download en_core_web_sm")
+    nlp = spacy.load("en_core_web_sm")
 
 # Function to extract text from PDF
 def extract_text_from_pdf(pdf_file):
-    text = extract_text(pdf_file)
-    return text
+    return extract_text(pdf_file)
 
 # Function to extract text from DOCX
 def extract_text_from_docx(docx_file):
@@ -39,7 +48,8 @@ def extract_contact_info(text):
 
 # Function to extract skills
 def extract_skills(text):
-    skills = ["Python", "Machine Learning", "Deep Learning", "Data Science", "SQL", "NLP", "Java", "C++", "TensorFlow", "Pandas", "NumPy", "Keras"]
+    skills = ["Python", "Machine Learning", "Deep Learning", "Data Science", "SQL", "NLP", 
+              "Java", "C++", "TensorFlow", "Pandas", "NumPy", "Keras"]
     found_skills = [skill for skill in skills if skill.lower() in text.lower()]
     return list(set(found_skills))
 
