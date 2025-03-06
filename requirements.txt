@@ -2,3 +2,4 @@ streamlit
 spacy
 pandas
 pdfplumber
+python-docx
