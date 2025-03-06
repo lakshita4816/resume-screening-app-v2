@@ -1,31 +1,22 @@
 import streamlit as st
 import spacy
-import os
-import nltk
 from pdfminer.high_level import extract_text
 import docx
 import re
+import nltk
 from nltk.corpus import stopwords
 from textblob import TextBlob
 
-# Ensure necessary nltk data is downloaded
-nltk_resources = ["stopwords", "punkt"]
-for resource in nltk_resources:
-    try:
-        nltk.data.find(f"corpora/{resource}")
-    except LookupError:
-        nltk.download(resource)
+# Download necessary NLP data
+nltk.download('stopwords')
 
-# Ensure spaCy model is installed
-try:
-    nlp = spacy.load("en_core_web_sm")
-except OSError:
-    os.system("python -m spacy download en_core_web_sm")
-    nlp = spacy.load("en_core_web_sm")
+# Load NLP model
+nlp = spacy.load("en_core_web_sm")
 
 # Function to extract text from PDF
 def extract_text_from_pdf(pdf_file):
-    return extract_text(pdf_file)
+    text = extract_text(pdf_file)
+    return text
 
 # Function to extract text from DOCX
 def extract_text_from_docx(docx_file):
@@ -48,15 +39,32 @@ def extract_contact_info(text):
 
 # Function to extract skills
 def extract_skills(text):
-    skills = ["Python", "Machine Learning", "Deep Learning", "Data Science", "SQL", "NLP", 
-              "Java", "C++", "TensorFlow", "Pandas", "NumPy", "Keras"]
+    skills = ["Python", "Machine Learning", "Deep Learning", "Data Science", "SQL", "NLP", "Java", "C++", "TensorFlow", "Pandas", "NumPy", "Keras"]
     found_skills = [skill for skill in skills if skill.lower() in text.lower()]
     return list(set(found_skills))
 
-# Sentiment analysis for resume
+# Function to estimate years of experience
+def extract_experience(text):
+    experience_pattern = r'(\d+)\s*(?:years?|yrs?)\s*(?:of)?\s*(?:experience|exp)'
+    experience_matches = re.findall(experience_pattern, text)
+    
+    if experience_matches:
+        return max(map(int, experience_matches))  # Return the highest number found
+    return "Not Found"
+
+# Function for sentiment analysis
 def analyze_sentiment(text):
     blob = TextBlob(text)
     return blob.sentiment.polarity
+
+# Function to provide resume improvement suggestions
+def get_resume_improvement_suggestions(sentiment_score):
+    if sentiment_score > 0.2:
+        return "✅ Your resume has a **positive** tone! It looks professional and well-structured."
+    elif sentiment_score > 0:
+        return "⚠️ Your resume is **neutral**. Consider adding more **action words** and achievements to make it more impactful."
+    else:
+        return "❌ Your resume has a **negative** tone. Try rephrasing sentences to be more **confident and results-oriented**."
 
 # Streamlit UI
 st.title("📄 Resume Screening App")
@@ -78,21 +86,27 @@ if uploaded_file:
     # Extract and display details
     names, emails, phones = extract_contact_info(resume_text)
     skills = extract_skills(resume_text)
+    experience = extract_experience(resume_text)
     sentiment_score = analyze_sentiment(resume_text)
+    improvement_suggestion = get_resume_improvement_suggestions(sentiment_score)
 
     st.subheader("🔍 Extracted Information:")
     st.write(f"👤 **Name(s):** {', '.join(names) if names else 'Not Found'}")
     st.write(f"📧 **Email(s):** {', '.join(emails) if emails else 'Not Found'}")
     st.write(f"📞 **Phone Number(s):** {', '.join(phones) if phones else 'Not Found'}")
     st.write(f"💡 **Skills Detected:** {', '.join(skills) if skills else 'Not Found'}")
+    st.write(f"⏳ **Estimated Experience:** {experience} years")
 
-    # Sentiment Analysis
-    st.subheader("📊 Sentiment Analysis:")
+    # Sentiment Analysis & Improvement Suggestions
+    st.subheader("📊 Resume Sentiment Analysis:")
     if sentiment_score > 0:
         st.success(f"Positive Sentiment: {sentiment_score:.2f}")
     elif sentiment_score < 0:
         st.error(f"Negative Sentiment: {sentiment_score:.2f}")
     else:
         st.warning(f"Neutral Sentiment: {sentiment_score:.2f}")
+
+    st.subheader("📌 Resume Improvement Suggestions:")
+    st.write(improvement_suggestion)
 
 st.write("✨ **Built with Streamlit, Spacy, and NLP**")
