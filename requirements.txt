@@ -3,3 +3,7 @@ spacy
 pandas
 pdfplumber
 python-docx
+pdfminer.six
+nltk
+textblob
+
